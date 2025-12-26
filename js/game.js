@@ -1,89 +1,85 @@
-class Game {
-    constructor(ctx){
-        this.ctx = ctx;
-        this.tableImg = new Image();
-        this.tableImg.src = 'assets/sprites/table.png';
-
-        this.ballImg = new Image();
-        this.ballImg.src = 'assets/sprites/ball.png';
-
-        this.shadowImg = new Image();
-        this.shadowImg.src = 'assets/sprites/shadow.png';
-
-        this.paddleImg = new Image();
-        this.paddleImg.src = 'assets/sprites/paddle.png';
-
-        this.ball = null;
-        this.player = null;
-        this.ai = null;
-        this.camera = null;
-
-        this.lastTime = 0;
-        this.score = {player:0, ai:0};
+class Ball {
+    constructor(x, y, sprite, shadowSprite, table) {
+        this.pos = { x: x, y: y };
+        this.z = 0;                  
+        this.vel = { x: 0, y: 0 };   
+        this.zVel = 0;               
+        this.radius = 12;            
+        this.spin = { x: 0, y: 0 };  
+        this.speed = 10;
+        this.maxZ = 60;
+        this.bounceDamping = 0.92;
+        this.friction = 0.997;
+        this.table = table;          
+        this.sprite = sprite;
+        this.shadowSprite = shadowSprite;
+        this.trail = [];
     }
 
-    init(canvas){
-        // Table bounds (example)
-        window.tableBounds = {xMin:50,xMax:750,yMin:50,yMax:550};
+    update(dt) {
+        // Spin-induced curve
+        this.vel.x += this.spin.y * 0.06;
+        this.vel.y -= this.spin.x * 0.06;
 
-        // Create ball
-        this.ball = new Ball(400,300,this.ballImg,this.shadowImg,tableBounds);
+        // Friction
+        this.vel.x *= this.friction;
+        this.vel.y *= this.friction;
 
-        // Create paddles
-        this.player = new Paddle(400,520,this.paddleImg,false,0.8);
-        this.ai = new Paddle(400,80,this.paddleImg,true,0.7);
-        this.ai.target = this.ball;
+        // Update pos
+        this.pos.x += this.vel.x * dt * 60;
+        this.pos.y += this.vel.y * dt * 60;
 
-        // Camera
-        this.camera = new Camera(canvas);
-        this.camera.target = this.ball;
+        // Vertical physics
+        this.zVel += -9.8 * dt;
+        this.z += this.zVel * dt * 60;
+
+        // Bounce on table
+        if(this.z < 0){
+            this.z = 0;
+            this.zVel = -this.zVel * this.bounceDamping;
+
+            // Random spin
+            this.spin.x += (Math.random()-0.5)*3;
+            this.spin.y += (Math.random()-0.5)*3;
+        }
+
+        // Table bounds
+        if(this.pos.x < this.table.xMin){ this.pos.x=this.table.xMin; this.vel.x=-this.vel.x;}
+        if(this.pos.x > this.table.xMax){ this.pos.x=this.table.xMax; this.vel.x=-this.vel.x;}
+        if(this.pos.y < this.table.yMin){ this.pos.y=this.table.yMin; this.vel.y=-this.vel.y;}
+        if(this.pos.y > this.table.yMax){ this.pos.y=this.table.yMax; this.vel.y=-this.vel.y;}
+
+        // Record trail
+        this.trail.push({x:this.pos.x,y:this.pos.y,z:this.z});
+        if(this.trail.length>10) this.trail.shift();
     }
 
-    update(dt){
-        this.ball.update(dt);
-        this.player.update(dt);
-        this.ai.update(dt);
+    draw(ctx) {
+        // Shadow
+        const shadowOffset = this.z*0.5;
+        const scale = 1 - (this.z/this.maxZ)*0.5;
+        ctx.drawImage(this.shadowSprite,this.pos.x-this.radius,this.pos.y+shadowOffset-this.radius,this.radius*2*scale,this.radius*2*scale);
 
-        // Ball collisions
-        this.ball.hitByPaddle(this.player);
-        this.ball.hitByPaddle(this.ai);
-
-        this.camera.update();
-
-        // Check scoring
-        if(this.ball.pos.y < tableBounds.yMin) { this.score.player++; this.ballReset(); }
-        if(this.ball.pos.y > tableBounds.yMax) { this.score.ai++; this.ballReset(); }
+        // Ball
+        ctx.drawImage(this.sprite,this.pos.x-this.radius,this.pos.y-this.radius-this.z,this.radius*2,this.radius*2);
     }
 
-    ballReset(){
-        this.ball.pos = {x:400,y:300};
-        this.ball.z = 0;
-        this.ball.vel = {x:(Math.random()-0.5)*8,y:(Math.random()-0.5)*8};
-        this.ball.zVel = 0;
-        this.ball.spin = {x:0,y:0};
-    }
+    hitByPaddle(paddle) {
+        const dx = this.pos.x - paddle.pos.x;
+        const dy = this.pos.y - paddle.pos.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if(dist < this.radius + paddle.radius){
+            const normX = dx / dist;
+            const normY = dy / dist;
+            const speed = Math.sqrt(this.vel.x**2+this.vel.y**2);
 
-    draw(){
-        const ctx = this.ctx;
-        ctx.save();
-        this.camera.apply(ctx);
+            this.vel.x = normX*speed + paddle.vel.x*0.5;
+            this.vel.y = normY*speed + paddle.vel.y*0.5;
 
-        // Draw table
-        ctx.drawImage(this.tableImg, tableBounds.xMin, tableBounds.yMin, tableBounds.xMax-tableBounds.xMin, tableBounds.yMax-tableBounds.yMin);
+            this.spin.x += (dy/dist)*paddle.skillFactor*2;
+            this.spin.y += (dx/dist)*paddle.skillFactor*2;
 
-        // Draw paddles
-        this.player.draw(ctx);
-        this.ai.draw(ctx);
-
-        // Draw ball
-        this.ball.draw(ctx);
-
-        ctx.restore();
-
-        // Draw score
-        ctx.fillStyle = "white";
-        ctx.font = "24px sans-serif";
-        ctx.fillText(`Player: ${this.score.player}`,20,30);
-        ctx.fillText(`AI: ${this.score.ai}`,650,30);
+            this.zVel = this.speed*0.6 + Math.random()*2;
+        }
     }
 }
