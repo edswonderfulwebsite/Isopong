@@ -3,7 +3,6 @@ class Game {
         this.ctx = ctx;
         this.canvas = canvas;
 
-        // Images
         this.tableImg = new Image();
         this.tableImg.src = 'assets/sprites/table.png';
 
@@ -17,10 +16,10 @@ class Game {
         this.paddleImg.src = 'assets/sprites/paddle.png';
 
         this.bounds = {
-            xMin: 100,
-            xMax: canvas.width - 100,
-            yMin: 80,
-            yMax: canvas.height - 80
+            left: 120,
+            right: canvas.width - 120,
+            top: 80,
+            bottom: canvas.height - 80
         };
     }
 
@@ -30,8 +29,9 @@ class Game {
 
         this.ball = new Ball(cx, cy, this.ballImg, this.shadowImg, this.bounds);
 
-        this.player = new Paddle(cx, this.bounds.yMax - 30, this.paddleImg, false);
-        this.ai = new Paddle(cx, this.bounds.yMin + 30, this.paddleImg, true, 0.85);
+        // left = player, right = AI
+        this.player = new Paddle(this.bounds.left, cy, this.paddleImg, false);
+        this.ai = new Paddle(this.bounds.right, cy, this.paddleImg, true, 0.85);
         this.ai.target = this.ball;
 
         this.camera = new Camera(this.canvas);
@@ -40,6 +40,7 @@ class Game {
 
     update(dt) {
         this.ball.update(dt);
+
         this.player.update(dt);
         this.ai.update(dt);
 
@@ -57,10 +58,10 @@ class Game {
 
         ctx.drawImage(
             this.tableImg,
-            this.bounds.xMin,
-            this.bounds.yMin,
-            this.bounds.xMax - this.bounds.xMin,
-            this.bounds.yMax - this.bounds.yMin
+            this.bounds.left,
+            this.bounds.top,
+            this.bounds.right - this.bounds.left,
+            this.bounds.bottom - this.bounds.top
         );
 
         this.player.draw(ctx);
