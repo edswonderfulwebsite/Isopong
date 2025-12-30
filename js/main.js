@@ -1,28 +1,18 @@
-const canvas = document.getElementById("gameCanvas");
-const ctx = canvas.getContext("2d");
+// main.js — bulletproof startup
 
-canvas.width = 960;
-canvas.height = 540;
+window.addEventListener("DOMContentLoaded", () => {
+    const canvas = document.getElementById("gameCanvas");
 
-// no more fucking smoothing in the pngs
-ctx.imageSmoothingEnabled = false;
+    if (!canvas) {
+        throw new Error("Canvas element with id 'gameCanvas' not found.");
+    }
 
-const game = new Game(ctx, canvas);
-game.init();
+    if (!(canvas instanceof HTMLCanvasElement)) {
+        throw new Error("Element 'gameCanvas' is not a <canvas>.");
+    }
 
-let lastTime = 0;
+    const game = new Game(canvas);
+    game.loop();
 
-function loop(time) {
-    const dt = Math.min((time - lastTime) / 1000, 0.033);
-    lastTime = time;
-
-    ctx.imageSmoothingEnabled = false;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    game.update(dt);
-    game.draw();
-
-    requestAnimationFrame(loop);
-}
-
-requestAnimationFrame(loop);
+    console.log("Game started successfully.");
+});
