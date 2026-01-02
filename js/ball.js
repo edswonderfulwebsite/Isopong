@@ -1,61 +1,100 @@
 class Ball {
-    constructor(paddle) {
-        this.radius = 6;
+  constructor(paddle) {
+    this.radius = 6;
 
-        this.reset(paddle);
+    this.sprite = new Image();
+    this.sprite.src = "assets/sprites/ball.png";
 
-        this.gravity = -900;
+    this.shadow = new Image();
+    this.shadow.src = "assets/sprites/shadow.png";
 
-        this.sprite = new Image();
-        this.sprite.src = "assets/sprites/ball.png";
+    this.gravity = -1200;
 
-        this.shadow = new Image();
-        this.shadow.src = "assets/sprites/shadow.png";
+    this.reset(paddle);
+  }
+
+  reset(paddle) {
+    this.x = paddle.x + 40;
+    this.y = paddle.y;
+    this.z = 12;
+
+    this.vx = 0;
+    this.vy = 0;
+    this.vz = 0;
+
+    this.active = false;
+    this.bounceTimer = 0;
+  }
+
+  serve() {
+    if (this.active) return;
+
+    this.active = true;
+    this.vx = 420;
+    this.vy = 0;
+    this.vz = 420;
+  }
+
+  update(dt, paddle) {
+    if (!this.active) {
+      // Pre-serve bounce
+      this.bounceTimer += dt * 6;
+      this.z = Math.abs(Math.sin(this.bounceTimer)) * 10;
+      this.x = paddle.x + 40;
+      this.y = paddle.y;
+      return;
     }
 
-    reset(paddle) {
-        this.x = paddle.x + 50; // start near paddle
-        this.y = paddle.y;
-        this.z = 0;    // height above table
-        this.vx = 240; // horizontal
-        this.vy = 0;   // vertical on table
-        this.vz = 320; // upward
+    // Physics
+    this.vz += this.gravity * dt;
+
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.z += this.vz * dt;
+
+    // Table bounce
+    if (this.z <= 0) {
+      this.z = 0;
+      this.vz *= -0.75;
     }
 
-    update(dt, paddle) {
-        // Ball physics
-        this.vz += this.gravity * dt;
-        this.x += this.vx * dt;
-        this.y += this.vy * dt;
-        this.z += this.vz * dt;
+    // Paddle collision
+    if (
+      this.x + this.radius > paddle.x - paddle.width / 2 &&
+      this.x - this.radius < paddle.x + paddle.width / 2 &&
+      this.y + this.radius > paddle.y - paddle.height / 2 &&
+      this.y - this.radius < paddle.y + paddle.height / 2 &&
+      this.z < 12
+    ) {
+      // Reflect forward
+      this.vx = Math.abs(this.vx) + Math.abs(paddle.vx) * 0.4;
 
-        // Bounce on table
-        if (this.z <= 0) {
-            this.z = 0;
-            this.vz *= -0.75;
-        }
+      // Add directional control from paddle motion
+      this.vy += paddle.vy * 0.35;
 
-        // Paddle collision
-        if (
-            this.x + this.radius > paddle.x - paddle.width / 2 &&
-            this.x - this.radius < paddle.x + paddle.width / 2 &&
-            this.y + this.radius > paddle.y - paddle.height / 2 &&
-            this.y - this.radius < paddle.y + paddle.height / 2 &&
-            this.z <= 10 // only near table
-        ) {
-            this.vx *= -1; // reverse horizontal
-            this.vy += (this.y - paddle.y) * 3; // reflect vertical based on where it hit
-            this.vz = Math.max(this.vz, 200); // small upward boost
-        }
+      // Add lift from upward motion
+      this.vz = Math.max(this.vz, Math.abs(paddle.vy) * 0.2 + 300);
     }
+  }
 
-    draw(ctx) {
-        // Shadow on table
-        ctx.globalAlpha = 0.5;
-        ctx.drawImage(this.shadow, this.x - 10, this.y - 4, 20, 8);
-        ctx.globalAlpha = 1;
+  draw(ctx) {
+    // Shadow (only on table)
+    ctx.globalAlpha = 0.5;
+    ctx.drawImage(
+      this.shadow,
+      this.x - 10,
+      this.y - 4,
+      20,
+      8
+    );
+    ctx.globalAlpha = 1;
 
-        // Ball
-        ctx.drawImage(this.sprite, this.x - this.radius, this.y - this.z - this.radius, this.radius*2, this.radius*2);
-    }
+    ctx.drawImage(
+      this.sprite,
+      this.x - this.radius,
+      this.y - this.z - this.radius,
+      this.radius * 2,
+      this.radius * 2
+    );
+  }
 }
