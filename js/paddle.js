@@ -12,8 +12,9 @@ class Paddle {
     this.width = 14;
     this.height = 70;
 
-    this.stiffness = 80;   // spring strength
-    this.damping = 0.85;   // velocity decay
+    // MUCH tighter response
+    this.stiffness = 260;
+    this.damping = 0.94;
 
     this.sprite = new Image();
     this.sprite.src = "assets/sprites/paddle.png";
@@ -23,7 +24,6 @@ class Paddle {
     this.prevX = this.x;
     this.prevY = this.y;
 
-    // spring force
     const fx = (cursorX - this.x) * this.stiffness;
     const fy = (cursorY - this.y) * this.stiffness;
 
@@ -45,14 +45,5 @@ class Paddle {
       this.width,
       this.height
     );
-  }
-
-  getHitbox() {
-    return {
-      x: this.x,
-      y: this.y,
-      w: this.width,
-      h: this.height
-    };
   }
 }
