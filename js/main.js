@@ -1,3 +1,6 @@
-const canvas = document.getElementById("game");
+// main.js
+
+const canvas = document.getElementById("gameCanvas");
 const game = new Game(canvas);
-game.loop();
+
+console.log("Game started successfully.");
