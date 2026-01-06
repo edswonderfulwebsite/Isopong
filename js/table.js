@@ -1,40 +1,36 @@
-// table.js
-
 class Table {
-  constructor(canvasWidth, canvasHeight) {
-    // Table dimensions in pixels for now (placeholder)
-    this.width = 320;   // Width on canvas
-    this.height = 180;  // Depth on canvas
+  constructor(canvas) {
+    this.canvas = canvas;
 
-    // Center the table in the canvas
-    this.x = (canvasWidth - this.width) / 2;
-    this.y = (canvasHeight - this.height) / 2;
+    // Scale factor for screen
+    this.scale = 140;
 
-    // Bounds for collision (in canvas pixels for now)
-    this.minX = this.x;
-    this.maxX = this.x + this.width;
-    this.minY = this.y;
-    this.maxY = this.y + this.height;
+    this.width = 1.525 * this.scale;
+    this.height = 2.74 * this.scale;
+
+    this.x = (canvas.width - this.width) / 2;
+    this.y = (canvas.height - this.height) / 2;
   }
 
-  // Check if a point is above table (pixel coords)
-  isAbove(x, y) {
-    return x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY;
-  }
-
-  // Draw the table as a green rectangle with a white net line
   draw(ctx) {
-    // Table surface
-    ctx.fillStyle = "#1e6f28"; // dark green
+    ctx.fillStyle = "#22c55e";
     ctx.fillRect(this.x, this.y, this.width, this.height);
 
-    // Net line (center)
-    const netX = this.x + this.width / 2;
+    // Net
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.moveTo(netX, this.y);
-    ctx.lineTo(netX, this.y + this.height);
+    ctx.moveTo(this.x, this.y + this.height / 2);
+    ctx.lineTo(this.x + this.width, this.y + this.height / 2);
     ctx.stroke();
+  }
+
+  contains(x, y) {
+    return (
+      x >= this.x &&
+      x <= this.x + this.width &&
+      y >= this.y &&
+      y <= this.y + this.height
+    );
   }
 }
